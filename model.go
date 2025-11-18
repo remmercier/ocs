@@ -54,7 +54,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				BorderStyle(lipgloss.NormalBorder()).
 				BorderForeground(lipgloss.Color("240")).
 				BorderBottom(true).
-				Bold(false)
+				Bold(true).
+				Foreground(lipgloss.Color("15"))
 			s.Selected = s.Selected.
 				Foreground(lipgloss.Color("229")).
 				Background(lipgloss.Color("57")).
@@ -89,7 +90,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return m.table.View() + "\n"
+	return m.table.View()
 }
 
 func newModel(sessions []Session, cursor int) model {
@@ -125,12 +126,20 @@ func newModel(sessions []Session, cursor int) model {
 		if strings.HasPrefix(dir, home) {
 			dir = "~" + dir[len(home):]
 		}
-		rows[i] = table.Row{
+		row := table.Row{
 			s.ID,
 			s.Title,
 			dir,
 			createdTime,
 		}
+		if _, err := os.Stat(s.Directory); os.IsNotExist(err) {
+			style := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+			row[0] = style.Render(row[0])
+			row[1] = style.Render(row[1])
+			row[2] = style.Render(row[2])
+			row[3] = style.Render(row[3])
+		}
+		rows[i] = row
 	}
 
 	t := table.New(
@@ -148,7 +157,8 @@ func newModel(sessions []Session, cursor int) model {
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
-		Bold(false)
+		Bold(true).
+		Foreground(lipgloss.Color("15"))
 	s.Selected = s.Selected.
 		Foreground(lipgloss.Color("229")).
 		Background(lipgloss.Color("57")).

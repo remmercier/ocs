@@ -6,9 +6,24 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
+	"strconv"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+func getTime(created interface{}) time.Time {
+	switch v := created.(type) {
+	case float64:
+		return time.UnixMilli(int64(v))
+	case string:
+		if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return time.UnixMilli(i)
+		}
+	}
+	return time.Time{}
+}
 
 func main() {
 	var debug bool
@@ -26,6 +41,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error scanning sessions: %v", err)
 	}
+	sort.Slice(sessions, func(i, j int) bool {
+		ti := getTime(sessions[i].Time.Created)
+		tj := getTime(sessions[j].Time.Created)
+		return ti.After(tj)
+	})
 	if debug {
 		log.Printf("Found %d sessions", len(sessions))
 		if len(sessions) > 0 {
