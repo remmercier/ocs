@@ -3,6 +3,8 @@
 ## Description
 `ocs` is a terminal user interface (TUI) application for browsing and launching opencode sessions. It scans the opencode session storage directory for JSON files, extracts metadata (session ID, title, working directory, and creation timestamp), and displays them in an interactive table. You can navigate the table, select a session with Enter to launch it in opencode, and return to the browser after closing opencode.
 
+![Screenshot](docs/screenshot.png)
+
 ## Features
 - **Interactive Table**: Browse sessions with columns for ID, Title, Directory (abbreviated with ~), and Created timestamp.
 - **Full-Screen Mode**: Uses alternate screen for a clean, distraction-free interface.
