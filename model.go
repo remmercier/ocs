@@ -12,6 +12,18 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+func truncateWithEllipsis(text string, maxLen int) string {
+	if len(text) <= maxLen {
+		return text
+	}
+	if maxLen < 5 {
+		return text[:maxLen]
+	}
+	startLen := (maxLen - 3) / 2
+	endLen := maxLen - 3 - startLen
+	return text[:startLen] + "..." + text[len(text)-endLen:]
+}
+
 var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
 	BorderForeground(lipgloss.Color("240"))
@@ -43,6 +55,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.columns[1].Width = m.width * 35 / 100
 			m.columns[2].Width = m.width * 30 / 100
 			m.columns[3].Width = m.width * 20 / 100
+
+			// Rebuild rows with new column widths
+			home, _ := os.UserHomeDir()
+			dirW := m.columns[2].Width
+			for i, s := range m.sessions {
+				dir := s.Directory
+				if strings.HasPrefix(dir, home) {
+					dir = "~" + dir[len(home):]
+				}
+				dir = truncateWithEllipsis(dir, dirW-2)
+				m.rows[i][2] = dir
+			}
+
 			m.table = table.New(
 				table.WithColumns(m.columns),
 				table.WithRows(m.rows),
@@ -126,6 +151,7 @@ func newModel(sessions []Session, cursor int) model {
 		if strings.HasPrefix(dir, home) {
 			dir = "~" + dir[len(home):]
 		}
+		dir = truncateWithEllipsis(dir, dirW-2)
 		row := table.Row{
 			s.ID,
 			s.Title,
