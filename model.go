@@ -128,7 +128,19 @@ Press any key to close help`
 	right := "press '?' for help  "
 	header := lipgloss.JoinHorizontal(lipgloss.Top, left, lipgloss.PlaceHorizontal(m.width-lipgloss.Width(left), lipgloss.Right, right))
 	styledHeader := lipgloss.NewStyle().Bold(true).Render(header)
-	return styledHeader + "\n\n" + m.table.View()
+	tableView := m.table.View()
+	lines := strings.Split(tableView, "\n")
+	if len(lines) > 0 {
+		headerLine := lines[0]
+		rest := ""
+		if len(lines) > 1 {
+			rest = "\n" + strings.Join(lines[1:], "\n")
+		}
+		horizontalLine := strings.Repeat("─", m.width)
+		return styledHeader + "\n\n" + headerLine + "\n" + horizontalLine + rest
+	} else {
+		return styledHeader + "\n\n" + tableView
+	}
 }
 
 func (m *model) rebuildTable() {
@@ -196,7 +208,7 @@ func (m *model) rebuildTable() {
 	s := table.DefaultStyles()
 	s.Header = s.Header.
 		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
+		BorderBottom(false).
 		Bold(true).
 		Foreground(lipgloss.Color("15"))
 	s.Selected = s.Selected.
@@ -264,7 +276,7 @@ func newModel(sessions []Session, cursor int) model {
 	s := table.DefaultStyles()
 	s.Header = s.Header.
 		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
+		BorderBottom(false).
 		Bold(true).
 		Foreground(lipgloss.Color("15"))
 	s.Selected = s.Selected.
