@@ -136,7 +136,7 @@ Press any key to close help`
 		if len(lines) > 1 {
 			rest = "\n" + strings.Join(lines[1:], "\n")
 		}
-		horizontalLine := strings.Repeat("─", m.width)
+		horizontalLine := lipgloss.NewStyle().Faint(true).Foreground(lipgloss.Color("252")).Render(strings.Repeat("─", m.width))
 		return styledHeader + "\n\n" + headerLine + "\n" + horizontalLine + rest
 	} else {
 		return styledHeader + "\n\n" + tableView
