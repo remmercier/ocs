@@ -64,7 +64,19 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error running program: %v", err)
 		}
-		if finalModel.(model).selectedCommand != "" {
+		if finalModel.(model).shouldRefresh {
+			sessions, err = scanSessions(*dir)
+			if err != nil {
+				log.Fatalf("Error scanning sessions: %v", err)
+			}
+			sort.Slice(sessions, func(i, j int) bool {
+				ti := getTime(sessions[i].Time.Created)
+				tj := getTime(sessions[j].Time.Created)
+				return ti.After(tj)
+			})
+			lastCursor = -1
+			// continue loop
+		} else if finalModel.(model).selectedCommand != "" {
 			lastCursor = finalModel.(model).selectedIndex
 			fmt.Println(finalModel.(model).selectedCommand)
 			cmd := exec.Command("/bin/bash", "-c", finalModel.(model).selectedCommand)

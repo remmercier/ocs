@@ -37,6 +37,7 @@ type model struct {
 	height          int
 	selectedCommand string
 	selectedIndex   int
+	shouldRefresh   bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -98,6 +99,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.table.Focus()
 			}
 		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "r":
+			m.shouldRefresh = true
 			return m, tea.Quit
 		case "enter":
 			selectedIndex := m.table.Cursor()
@@ -200,5 +204,6 @@ func newModel(sessions []Session, cursor int) model {
 		width:         width,
 		height:        height,
 		selectedIndex: -1,
+		shouldRefresh: false,
 	}
 }
