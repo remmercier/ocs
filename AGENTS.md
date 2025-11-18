@@ -12,6 +12,8 @@
 - Command: `go test ./...`
 - Description: Runs all tests in the project
 
+Don't run tests for now.
+
 ## Building
 - Command: `go build ./...`
 - Description: Builds the Go project
@@ -19,3 +21,9 @@
 ## Dependency Management
 - Command: `go mod tidy`
 - Description: Cleans up go.mod and go.sum files
+
+## Installing
+- Command: `make install`
+- Description: Installs the Go binaries for the project
+
+Always run this after building.

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:1234/v1"
+      },
+      "models": {
+        "openai/gpt-oss-20b": {
+          "name": "GPT OSS 20B (local)"
+        },
+        "qwen/qwen2.5-coder-14b": {
+          "name": "Qwen2.5 Coder 14B (local)"
+        },
+        "qwen/qwen3-vl-8b": {
+          "name": "Qwen3 VL 8B (local)"
+        },
+        "granite-4.0-h-tiny-mlx": {
+          "name": "Granite 4.0 H Tiny MLX (local)"
+        },
+        "text-embedding-nomic-embed-text-v1.5": {
+          "name": "Nomic Embed Text v1.5 (local)"
+        }
+      }
+    }
+  }
+}

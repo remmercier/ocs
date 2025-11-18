@@ -33,65 +33,40 @@ type model struct {
 	sessions        []Session
 	rows            []table.Row
 	columns         []table.Column
+	baseWidths      []int
+	visibleColumns  []bool
 	width           int
 	height          int
 	selectedCommand string
 	selectedIndex   int
 	shouldRefresh   bool
+	showHelp        bool
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return tea.WindowSize()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		if msg.Width != m.width || msg.Height-1 != m.height {
+		if msg.Width != m.width || msg.Height-3 != m.height {
 			oldCursor := m.table.Cursor()
 			m.width = msg.Width
-			m.height = msg.Height - 1
-			m.columns[0].Width = m.width * 15 / 100
-			m.columns[1].Width = m.width * 35 / 100
-			m.columns[2].Width = m.width * 30 / 100
-			m.columns[3].Width = m.width * 20 / 100
-
-			// Rebuild rows with new column widths
-			home, _ := os.UserHomeDir()
-			dirW := m.columns[2].Width
-			for i, s := range m.sessions {
-				dir := s.Directory
-				if strings.HasPrefix(dir, home) {
-					dir = "~" + dir[len(home):]
-				}
-				dir = truncateWithEllipsis(dir, dirW-2)
-				m.rows[i][2] = dir
-			}
-
-			m.table = table.New(
-				table.WithColumns(m.columns),
-				table.WithRows(m.rows),
-				table.WithFocused(true),
-				table.WithHeight(m.height),
-			)
-			s := table.DefaultStyles()
-			s.Header = s.Header.
-				BorderStyle(lipgloss.NormalBorder()).
-				BorderForeground(lipgloss.Color("240")).
-				BorderBottom(true).
-				Bold(true).
-				Foreground(lipgloss.Color("15"))
-			s.Selected = s.Selected.
-				Foreground(lipgloss.Color("229")).
-				Background(lipgloss.Color("57")).
-				Bold(false)
-			m.table.SetStyles(s)
-			m.table.SetWidth(m.width)
+			m.height = msg.Height - 3
+			m.rebuildTable()
 			m.table.SetCursor(oldCursor)
 		}
 	case tea.KeyMsg:
+		if m.showHelp {
+			m.showHelp = false
+			return m, nil
+		}
 		switch msg.String() {
+		case "?":
+			m.showHelp = true
+			return m, nil
 		case "esc":
 			if m.table.Focused() {
 				m.table.Blur()
@@ -103,6 +78,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			m.shouldRefresh = true
 			return m, tea.Quit
+		case "n":
+			m.selectedCommand = "opencode"
+			return m, tea.Quit
 		case "enter":
 			selectedIndex := m.table.Cursor()
 			if selectedIndex >= 0 && selectedIndex < len(m.sessions) {
@@ -112,6 +90,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			return m, nil
+		case "i":
+			m.visibleColumns[0] = !m.visibleColumns[0]
+			m.rebuildTable()
+		case "t":
+			m.visibleColumns[1] = !m.visibleColumns[1]
+			m.rebuildTable()
+		case "c":
+			m.visibleColumns[3] = !m.visibleColumns[3]
+			m.rebuildTable()
+		case "d":
+			m.visibleColumns[2] = !m.visibleColumns[2]
+			m.rebuildTable()
 		}
 	}
 	m.table, cmd = m.table.Update(msg)
@@ -119,22 +109,119 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return m.table.View()
+	if m.showHelp {
+		return `Help:
+↑/↓: Navigate sessions
+Enter: Open selected session
+r: Refresh sessions
+n: New session
+i: Toggle ID column
+t: Toggle Title column
+c: Toggle Created column
+d: Toggle Directory column
+?: Show this help
+q/Ctrl+C: Quit
+
+Press any key to close help`
+	}
+	left := " OpenCode session viewer"
+	right := "press '?' for help  "
+	header := lipgloss.JoinHorizontal(lipgloss.Top, left, lipgloss.PlaceHorizontal(m.width-lipgloss.Width(left), lipgloss.Right, right))
+	styledHeader := lipgloss.NewStyle().Bold(true).Render(header)
+	return styledHeader + "\n\n" + m.table.View()
+}
+
+func (m *model) rebuildTable() {
+	// calculate widths
+	totalPercent := 0
+	for i, vis := range m.visibleColumns {
+		if vis {
+			totalPercent += m.baseWidths[i]
+		}
+	}
+	newColumns := []table.Column{}
+	colIndexMap := []int{} // to map visible index to original
+	for i, vis := range m.visibleColumns {
+		if vis {
+			w := m.baseWidths[i] * m.width / totalPercent
+			newColumns = append(newColumns, table.Column{Title: m.columns[i].Title, Width: w})
+			colIndexMap = append(colIndexMap, i)
+		}
+	}
+	// rebuild rows
+	newRows := make([]table.Row, len(m.rows))
+	for i, row := range m.rows {
+		newRow := table.Row{}
+		for _, origIdx := range colIndexMap {
+			newRow = append(newRow, row[origIdx])
+		}
+		newRows[i] = newRow
+	}
+	// apply truncate for directory if visible
+	dirVisibleIndex := -1
+	for j, origIdx := range colIndexMap {
+		if origIdx == 2 {
+			dirVisibleIndex = j
+			break
+		}
+	}
+	if dirVisibleIndex >= 0 {
+		dirW := newColumns[dirVisibleIndex].Width
+		home, _ := os.UserHomeDir()
+		for i := range newRows {
+			dir := m.sessions[i].Directory
+			if strings.HasPrefix(dir, home) {
+				dir = "~" + dir[len(home):]
+			}
+			dir = truncateWithEllipsis(dir, dirW-2)
+			newRows[i][dirVisibleIndex] = dir
+		}
+	}
+	// apply styling for non-existent directories
+	for i, row := range newRows {
+		if _, err := os.Stat(m.sessions[i].Directory); os.IsNotExist(err) {
+			style := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+			for j := range row {
+				row[j] = style.Render(row[j])
+			}
+		}
+	}
+	// set table
+	m.table = table.New(
+		table.WithColumns(newColumns),
+		table.WithRows(newRows),
+		table.WithFocused(true),
+		table.WithHeight(m.height),
+	)
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(true).
+		Foreground(lipgloss.Color("15"))
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
+	m.table.SetStyles(s)
+	sumW := 0
+	for _, col := range newColumns {
+		sumW += col.Width
+	}
+	m.table.SetWidth(sumW)
 }
 
 func newModel(sessions []Session, cursor int) model {
 	width := 80
 	height := 20
-	idW := width * 15 / 100
-	titleW := width * 35 / 100
-	dirW := width * 30 / 100
-	createdW := width * 20 / 100
+	baseWidths := []int{15, 35, 30, 20}
+	visibleColumns := []bool{false, true, true, true}
 
 	columns := []table.Column{
-		{Title: "ID", Width: idW},
-		{Title: "Title", Width: titleW},
-		{Title: "Directory", Width: dirW},
-		{Title: "Created", Width: createdW},
+		{Title: "ID", Width: 0},
+		{Title: "Title", Width: 0},
+		{Title: "Directory", Width: 0},
+		{Title: "Created", Width: 0},
 	}
 
 	home, _ := os.UserHomeDir()
@@ -155,19 +242,11 @@ func newModel(sessions []Session, cursor int) model {
 		if strings.HasPrefix(dir, home) {
 			dir = "~" + dir[len(home):]
 		}
-		dir = truncateWithEllipsis(dir, dirW-2)
 		row := table.Row{
 			s.ID,
 			s.Title,
 			dir,
 			createdTime,
-		}
-		if _, err := os.Stat(s.Directory); os.IsNotExist(err) {
-			style := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-			row[0] = style.Render(row[0])
-			row[1] = style.Render(row[1])
-			row[2] = style.Render(row[2])
-			row[3] = style.Render(row[3])
 		}
 		rows[i] = row
 	}
@@ -184,7 +263,6 @@ func newModel(sessions []Session, cursor int) model {
 
 	s := table.DefaultStyles()
 	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(true).
@@ -196,7 +274,7 @@ func newModel(sessions []Session, cursor int) model {
 	t.SetStyles(s)
 	t.SetWidth(width)
 
-	return model{
+	m := model{
 		table:         t,
 		sessions:      sessions,
 		rows:          rows,
@@ -205,5 +283,10 @@ func newModel(sessions []Session, cursor int) model {
 		height:        height,
 		selectedIndex: -1,
 		shouldRefresh: false,
+		showHelp:      false,
 	}
+	m.baseWidths = baseWidths
+	m.visibleColumns = visibleColumns
+	m.rebuildTable()
+	return m
 }
