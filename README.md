@@ -1,15 +1,19 @@
 # ocs - Opencode Session Browser
 
 ## Description
-`ocs` is a terminal user interface (TUI) application for browsing and launching opencode sessions. It scans the opencode session storage directory for JSON files, extracts metadata (session ID, title, working directory, and creation timestamp), and displays them in an interactive table. You can navigate the table, select a session with Enter to launch it in opencode, and return to the browser after closing opencode.
+`ocs` is a terminal user interface (TUI) application for browsing and launching opencode sessions. It scans the opencode session storage directory for JSON files, extracts metadata (session ID, title, working directory, and creation timestamp), and displays them in an interactive table. You can navigate the table, select a session with Enter to launch it in opencode, and return to the browser after closing opencode. Features include column toggling, help modal, and responsive layout.
 
 ![Screenshot](docs/screenshot.png)
 
 ## Features
 - **Interactive Table**: Browse sessions with columns for ID, Title, Directory (abbreviated with ~), and Created timestamp.
+- **Column Toggling**: Toggle visibility of columns with i (ID), t (Title), d (Directory), c (Created).
+- **Help Modal**: Press ? for keybindings help.
 - **Full-Screen Mode**: Uses alternate screen for a clean, distraction-free interface.
 - **Cursor Persistence**: Remembers the last selected row when returning from opencode.
 - **Session Launching**: Runs `opencode -s <session_id>` in the session's working directory.
+- **New Session**: Press n to start a new opencode session.
+- **Refresh**: Press r to reload sessions.
 - **Configurable Directory**: Specify the session storage directory with `-dir` (default: `~/.local/share/opencode/storage/session`).
 - **Debug Mode**: Enable debug output with `-debug`.
 
@@ -22,7 +26,11 @@
 ## Usage
 - **Navigation**: Use arrow keys or vim-style keys (h/j/k/l) to move in the table.
 - **Select Session**: Press Enter on a session to launch it in opencode.
-- **Quit**: Press 'q' or Ctrl+C to exit.
+- **New Session**: Press n to start a new opencode session.
+- **Refresh**: Press r to reload sessions.
+- **Help**: Press ? to show keybindings.
+- **Column Toggles**: i (ID), t (Title), d (Directory), c (Created).
+- **Quit**: Press q, Esc, or Ctrl+C to exit.
 - **Resize**: The table automatically adjusts to terminal size.
 
 ## Flags
@@ -30,6 +38,5 @@
 - `-debug`: Enable debug output
 
 ## Dependencies
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) for TUI framework
-- [Bubbles](https://github.com/charmbracelet/bubbles) for table component
-- [Lipgloss](https://github.com/charmbracelet/lipgloss) for styling
+- [tview](https://github.com/rivo/tview) for TUI framework
+- [tcell](https://github.com/gdamore/tcell) for terminal handling
