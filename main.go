@@ -6,24 +6,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"sort"
-	"strconv"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
-
-func getTime(created interface{}) time.Time {
-	switch v := created.(type) {
-	case float64:
-		return time.UnixMilli(int64(v))
-	case string:
-		if i, err := strconv.ParseInt(v, 10, 64); err == nil {
-			return time.UnixMilli(i)
-		}
-	}
-	return time.Time{}
-}
 
 func parseFlags() (string, bool) {
 	dir := flag.String("dir", os.Getenv("HOME")+"/.local/share/opencode/storage/session", "directory to scan for session JSON files")
@@ -39,20 +24,17 @@ func checkDirectory(dir string) {
 	}
 }
 
-func loadAndSortSessions(dir string) []Session {
-	sessions, err := scanSessions(dir)
+func loadSessions(dir string) (Sessions, error) {
+	var sessions Sessions
+	err := sessions.Scan(dir)
 	if err != nil {
-		log.Fatalf("Error scanning sessions: %v", err)
+		return nil, err
 	}
-	sort.Slice(sessions, func(i, j int) bool {
-		ti := getTime(sessions[i].Time.Created)
-		tj := getTime(sessions[j].Time.Created)
-		return ti.After(tj)
-	})
-	return sessions
+	sessions.Sort()
+	return sessions, nil
 }
 
-func logSessions(sessions []Session, debug bool) {
+func logSessions(sessions Sessions, debug bool) {
 	if debug {
 		log.Printf("Found %d sessions", len(sessions))
 		if len(sessions) > 0 {
@@ -61,7 +43,7 @@ func logSessions(sessions []Session, debug bool) {
 	}
 }
 
-func runProgram(sessions []Session, lastCursor int) model {
+func runProgram(sessions Sessions, lastCursor int) model {
 	m := newModel(sessions, lastCursor)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	finalModel, err := p.Run()
@@ -89,7 +71,10 @@ func main() {
 		log.Printf("Scanning dir: %s", dir)
 	}
 	checkDirectory(dir)
-	sessions := loadAndSortSessions(dir)
+	sessions, err := loadSessions(dir)
+	if err != nil {
+		log.Fatalf("Error loading sessions: %v", err)
+	}
 	logSessions(sessions, debug)
 
 	lastCursor := -1
@@ -99,7 +84,10 @@ func main() {
 		}
 		finalModel := runProgram(sessions, lastCursor)
 		if finalModel.shouldRefresh {
-			sessions = loadAndSortSessions(dir)
+			sessions, err = loadSessions(dir)
+			if err != nil {
+				log.Fatalf("Error reloading sessions: %v", err)
+			}
 			lastCursor = -1
 		} else if finalModel.selectedCommand != "" {
 			lastCursor = handleCommand(finalModel.selectedCommand, finalModel.selectedIndex)

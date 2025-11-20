@@ -25,5 +25,4 @@ Don't run tests for now.
 ## Installing
 - Command: `make install`
 - Description: Installs the Go binaries for the project
-
-Always run this after building.
+- Always install at the end after building.

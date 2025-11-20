@@ -5,6 +5,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"time"
 )
 
 type TimeInfo struct {
@@ -18,6 +21,8 @@ type Summary struct {
 	Files     int `json:"files"`
 }
 
+type Sessions []Session
+
 type Session struct {
 	ID        string   `json:"id"`
 	Version   string   `json:"version"`
@@ -28,7 +33,19 @@ type Session struct {
 	Summary   Summary  `json:"summary"`
 }
 
-func parseSession(filePath string) (Session, error) {
+func getTime(created interface{}) time.Time {
+	switch v := created.(type) {
+	case float64:
+		return time.UnixMilli(int64(v))
+	case string:
+		if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return time.UnixMilli(i)
+		}
+	}
+	return time.Time{}
+}
+
+func NewSession(filePath string) (Session, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return Session{}, err
@@ -38,21 +55,28 @@ func parseSession(filePath string) (Session, error) {
 	return s, err
 }
 
-func scanSessions(dir string) ([]Session, error) {
-	var sessions []Session
+func (s *Sessions) Scan(dir string) error {
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() && filepath.Ext(path) == ".json" {
-			s, err := parseSession(path)
+			session, err := NewSession(path)
 			if err != nil {
 				log.Printf("Error parsing session file %s: %v", path, err)
 				return nil // continue
 			}
-			sessions = append(sessions, s)
+			*s = append(*s, session)
 		}
 		return nil
 	})
-	return sessions, err
+	return err
+}
+
+func (s Sessions) Sort() {
+	sort.Slice(s, func(i, j int) bool {
+		ti := getTime(s[i].Time.Created)
+		tj := getTime(s[j].Time.Created)
+		return ti.After(tj)
+	})
 }
