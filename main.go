@@ -6,8 +6,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/gdamore/tcell/v2"
 )
 
 func parseFlags() (string, bool) {
@@ -45,12 +46,76 @@ func logSessions(sessions Sessions, debug bool) {
 
 func runProgram(sessions Sessions, lastCursor int) model {
 	m := newModel(sessions, lastCursor)
-	p := tea.NewProgram(m, tea.WithAltScreen())
-	finalModel, err := p.Run()
-	if err != nil {
-		log.Fatalf("Error running program: %v", err)
+
+	m.app.SetBeforeDrawFunc(func(screen tcell.Screen) bool {
+		width, _ := screen.Size()
+		if width == 0 {
+			return false
+		}
+		m.currentWidth = width
+		m.table.Clear()
+		populateTable(m.table, m.sessions, m.visible, width)
+		// Update header
+		left := "OpenCode Session browser"
+		right := "Press ? for help"
+		padLen := width - len(left) - len(right)
+		if padLen > 0 {
+			m.header.SetText(left + strings.Repeat(" ", padLen) + right)
+		} else {
+			m.header.SetText(left + " " + right)
+		}
+		return false
+	})
+
+	// Set up input capture
+	m.table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyEnter:
+			row, _ := m.table.GetSelection()
+			if row > 1 && row-2 < len(m.sessions) {
+				selectedSession := m.sessions[row-2]
+				m.selectedCommand = fmt.Sprintf("cd '%s' ; opencode -s %s", selectedSession.Directory, selectedSession.ID)
+				m.selectedIndex = row - 2
+				m.app.Stop()
+			}
+		case tcell.KeyEscape:
+			m.app.Stop()
+		}
+		switch event.Rune() {
+		case 'q', 'Q':
+			m.app.Stop()
+		case 'r', 'R':
+			m.shouldRefresh = true
+			m.app.Stop()
+		case 'n', 'N':
+			m.selectedCommand = "opencode"
+			m.app.Stop()
+		case 'i', 'I':
+			m.visible[0] = !m.visible[0]
+			m.table.Clear()
+			populateTable(m.table, m.sessions, m.visible, m.currentWidth)
+		case 't', 'T':
+			m.visible[1] = !m.visible[1]
+			m.table.Clear()
+			populateTable(m.table, m.sessions, m.visible, m.currentWidth)
+		case 'd', 'D':
+			m.visible[2] = !m.visible[2]
+			m.table.Clear()
+			populateTable(m.table, m.sessions, m.visible, m.currentWidth)
+		case 'c', 'C':
+			m.visible[3] = !m.visible[3]
+			m.table.Clear()
+			populateTable(m.table, m.sessions, m.visible, m.currentWidth)
+		case '?':
+			m.app.SetRoot(m.helpModal, false).SetFocus(m.helpModal)
+		}
+		return event
+	})
+
+	if err := m.app.SetRoot(m.flex, true).Run(); err != nil {
+		log.Fatalf("Error running app: %v", err)
 	}
-	return finalModel.(model)
+	return m
 }
 
 func handleCommand(selectedCommand string, selectedIndex int) int {
