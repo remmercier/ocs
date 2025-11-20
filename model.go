@@ -143,7 +143,6 @@ func populateTable(table *tview.Table, sessions Sessions, visible [4]bool, width
 				cell.SetTextColor(tcell.ColorRed)
 			}
 			table.SetCell(i+2, colIndex, cell)
-			colIndex++
 		}
 	}
 }
