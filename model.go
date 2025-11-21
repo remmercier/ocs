@@ -10,7 +10,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-var bgColor = tcell.NewRGBColor(29, 36, 46)
+var bgColor = tcell.NewRGBColor(25, 34, 48)
 
 type model struct {
 	table           *tview.Table
@@ -168,7 +168,7 @@ func newModel(sessions Sessions, cursor int) model {
 	flex.AddItem(table, 0, 1, true)
 
 	helpModal := tview.NewModal().
-		SetText("Help:\nEnter: Open selected session\nn: New opencode\nr: Refresh\nq: Quit\n?: Help\nEsc: Quit\ni: Toggle ID\n t: Toggle Title\n d: Toggle Directory\n c: Toggle Created").
+		SetText("Help:\nEnter: Open selected session\nv: View selected session\nn: New opencode\nr: Refresh\nq: Quit\n?: Help\nEsc: Quit\nCtrl+D: Quit\ni: Toggle ID\n t: Toggle Title\n d: Toggle Directory\n c: Toggle Created").
 		AddButtons([]string{"OK"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			app.SetRoot(flex, true).SetFocus(table)

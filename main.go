@@ -80,6 +80,8 @@ func runProgram(sessions Sessions, lastCursor int) model {
 			}
 		case tcell.KeyEscape:
 			m.app.Stop()
+		case tcell.KeyCtrlD:
+			m.app.Stop()
 		}
 		switch event.Rune() {
 		case 'q', 'Q':
@@ -108,6 +110,24 @@ func runProgram(sessions Sessions, lastCursor int) model {
 			populateTable(m.table, m.sessions, m.visible, m.currentWidth)
 		case '?':
 			m.app.SetRoot(m.helpModal, false).SetFocus(m.helpModal)
+		case 'v', 'V':
+			row, _ := m.table.GetSelection()
+			if row > 1 && row-2 < len(m.sessions) {
+				selectedSession := m.sessions[row-2]
+				if _, err := exec.LookPath("python3"); err == nil {
+					if _, err := exec.LookPath("ocs_messages.py"); err == nil {
+						pager := "more"
+						if _, err := exec.LookPath("glow"); err == nil {
+							pager = "glow -p"
+						} else if _, err := exec.LookPath("less"); err == nil {
+							pager = "less"
+						}
+						m.selectedCommand = fmt.Sprintf("ocs_messages.py %s | %s", selectedSession.ID, pager)
+						m.selectedIndex = row - 2
+						m.app.Stop()
+					}
+				}
+			}
 		}
 		return event
 	})

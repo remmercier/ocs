@@ -12,6 +12,7 @@
 - **Full-Screen Mode**: Uses alternate screen for a clean, distraction-free interface.
 - **Cursor Persistence**: Remembers the last selected row when returning from opencode.
 - **Session Launching**: Runs `opencode -s <session_id>` in the session's working directory.
+- **View Session**: Press v to view session messages using python3 tool/ocs_messages.py piped to glow (if available), less, or more.
 - **New Session**: Press n to start a new opencode session.
 - **Refresh**: Press r to reload sessions.
 - **Configurable Directory**: Specify the session storage directory with `-dir` (default: `~/.local/share/opencode/storage/session`).
@@ -26,11 +27,12 @@
 ## Usage
 - **Navigation**: Use arrow keys or vim-style keys (h/j/k/l) to move in the table.
 - **Select Session**: Press Enter on a session to launch it in opencode.
+- **View Session**: Press v to view the selected session's messages.
 - **New Session**: Press n to start a new opencode session.
 - **Refresh**: Press r to reload sessions.
 - **Help**: Press ? to show keybindings.
 - **Column Toggles**: i (ID), t (Title), d (Directory), c (Created).
-- **Quit**: Press q, Esc, or Ctrl+C to exit.
+- **Quit**: Press q, Esc, Ctrl+D, or Ctrl+C to exit.
 - **Resize**: The table automatically adjusts to terminal size.
 
 ## Flags
@@ -40,3 +42,6 @@
 ## Dependencies
 - [tview](https://github.com/rivo/tview) for TUI framework
 - [tcell](https://github.com/gdamore/tcell) for terminal handling
+- python3 for viewing session messages
+- glow (optional, for enhanced markdown rendering)
+- less or more (for paging output)
