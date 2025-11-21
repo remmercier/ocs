@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+
 import json, os, sys
+import argparse
 
 STORAGE_ROOT = os.path.expanduser("~/.local/share/opencode/storage")
 
@@ -84,10 +86,12 @@ def recompose_session(session_id):
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python oc_messages.py <session_id>")
-        sys.exit(1)
-    session_id = sys.argv[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('session_id')
+    parser.add_argument('-d', '--storage-root', default=os.path.expanduser("~/.local/share/opencode/storage"))
+    args = parser.parse_args()
+    STORAGE_ROOT = args.storage_root
+    session_id = args.session_id
     try:
         result = recompose_session(session_id)
         for msg in result["messages"]:

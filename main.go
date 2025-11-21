@@ -11,12 +11,18 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-func parseFlags() (string, bool) {
+func parseFlags() (string, bool, bool) {
 	dir := flag.String("dir", os.Getenv("HOME")+"/.local/share/opencode/storage/session", "directory to scan for session JSON files")
 	var debug bool
 	flag.BoolVar(&debug, "debug", false, "enable debug output")
 	flag.Parse()
-	return *dir, debug
+	var dirOverridden bool
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "dir" {
+			dirOverridden = true
+		}
+	})
+	return *dir, debug, dirOverridden
 }
 
 func checkDirectory(dir string) {
@@ -44,8 +50,8 @@ func logSessions(sessions Sessions, debug bool) {
 	}
 }
 
-func runProgram(sessions Sessions, lastCursor int) model {
-	m := newModel(sessions, lastCursor)
+func runProgram(dir string, dirOverridden bool, sessions Sessions, lastCursor int) model {
+	m := newModel(dir, dirOverridden, sessions, lastCursor)
 
 	m.app.SetBeforeDrawFunc(func(screen tcell.Screen) bool {
 		width, _ := screen.Size()
@@ -122,7 +128,12 @@ func runProgram(sessions Sessions, lastCursor int) model {
 						} else if _, err := exec.LookPath("less"); err == nil {
 							pager = "less"
 						}
-						m.selectedCommand = fmt.Sprintf("ocs_messages.py %s | %s", selectedSession.ID, pager)
+						if m.dirOverridden {
+							dirForD := strings.TrimSuffix(m.dir, "/session")
+							m.selectedCommand = fmt.Sprintf("ocs_messages.py -d '%s' %s | %s", dirForD, selectedSession.ID, pager)
+						} else {
+							m.selectedCommand = fmt.Sprintf("ocs_messages.py %s | %s", selectedSession.ID, pager)
+						}
 						m.selectedIndex = row - 2
 						m.app.Stop()
 					}
@@ -151,7 +162,7 @@ func handleCommand(selectedCommand string, selectedIndex int) int {
 }
 
 func main() {
-	dir, debug := parseFlags()
+	dir, debug, dirOverridden := parseFlags()
 	if debug {
 		log.Printf("Scanning dir: %s", dir)
 	}
@@ -167,7 +178,7 @@ func main() {
 		if debug {
 			log.Printf("Setting cursor to %d", lastCursor)
 		}
-		finalModel := runProgram(sessions, lastCursor)
+		finalModel := runProgram(dir, dirOverridden, sessions, lastCursor)
 		if finalModel.shouldRefresh {
 			sessions, err = loadSessions(dir)
 			if err != nil {

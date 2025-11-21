@@ -25,6 +25,8 @@ type model struct {
 	flex            *tview.Flex
 	visible         [4]bool
 	currentWidth    int
+	dir             string
+	dirOverridden   bool
 }
 
 func populateTable(table *tview.Table, sessions Sessions, visible [4]bool, width int) {
@@ -147,7 +149,7 @@ func populateTable(table *tview.Table, sessions Sessions, visible [4]bool, width
 	}
 }
 
-func newModel(sessions Sessions, cursor int) model {
+func newModel(dir string, dirOverridden bool, sessions Sessions, cursor int) model {
 	width := 80 // default initial width
 
 	header := tview.NewTextView().SetScrollable(false)
@@ -193,6 +195,8 @@ func newModel(sessions Sessions, cursor int) model {
 		flex:          flex,
 		visible:       visible,
 		currentWidth:  width,
+		dir:           dir,
+		dirOverridden: dirOverridden,
 	}
 }
 
