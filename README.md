@@ -32,7 +32,7 @@
 - **Refresh**: Press r to reload sessions.
 - **Help**: Press ? to show keybindings.
 - **Column Toggles**: i (ID), t (Title), d (Directory), c (Created).
-- **Quit**: Press q, Esc, Ctrl+D, or Ctrl+C to exit.
+- **Quit**: Press q, Ctrl+D, or Ctrl+C to exit.
 - **Resize**: The table automatically adjusts to terminal size.
 
 ## Flags
