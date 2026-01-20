@@ -155,7 +155,7 @@ func populateTable(table *tview.Table, sessions Sessions, visible [4]bool, width
 	}
 }
 
-func newModel(dir string, dirOverridden bool, sessions Sessions, cursor int) model {
+func newModel(dir string, dirOverridden bool, sessions Sessions, cursor int, lastSearch string) model {
 	width := 80 // default initial width
 
 	header := tview.NewTextView().SetScrollable(false)
@@ -171,6 +171,11 @@ func newModel(dir string, dirOverridden bool, sessions Sessions, cursor int) mod
 		SetFieldBackgroundColor(tcell.NewRGBColor(40, 50, 70)).
 		SetLabelColor(tcell.ColorYellow)
 	searchInput.SetBackgroundColor(bgColor)
+
+	// Restore previous search query if any
+	if lastSearch != "" {
+		searchInput.SetText(lastSearch)
+	}
 
 	table := tview.NewTable().SetBorders(false).SetFixed(2, 0).SetSelectable(true, false)
 	table.SetBackgroundColor(bgColor)
@@ -198,7 +203,14 @@ func newModel(dir string, dirOverridden bool, sessions Sessions, cursor int) mod
 		})
 
 	visible := [4]bool{false, true, true, true}
-	populateTable(table, sessions, visible, width)
+
+	// Apply search filter if there's a lastSearch
+	filteredSessions := sessions
+	if lastSearch != "" {
+		filteredSessions = filterSessions(sessions, lastSearch)
+	}
+
+	populateTable(table, filteredSessions, visible, width)
 
 	if cursor >= 0 && cursor < len(sessions) {
 		table.Select(cursor+2, 0)
@@ -208,7 +220,7 @@ func newModel(dir string, dirOverridden bool, sessions Sessions, cursor int) mod
 		table:            table,
 		app:              app,
 		sessions:         sessions,
-		filteredSessions: sessions,
+		filteredSessions: filteredSessions,
 		selectedIndex:    -1,
 		shouldRefresh:    false,
 		showHelp:         false,
@@ -222,7 +234,7 @@ func newModel(dir string, dirOverridden bool, sessions Sessions, cursor int) mod
 		dirOverridden:    dirOverridden,
 		searchInput:      searchInput,
 		searchActive:     false,
-		searchQuery:      "",
+		searchQuery:      lastSearch,
 		sessionToDelete:  nil,
 	}
 }
