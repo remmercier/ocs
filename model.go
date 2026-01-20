@@ -10,7 +10,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-var bgColor = tcell.NewRGBColor(25, 34, 48)
+var bgColor = tcell.ColorDefault
 
 type model struct {
 	table            *tview.Table
@@ -168,7 +168,7 @@ func newModel(dir string, dirOverridden bool, sessions Sessions, cursor int, las
 
 	searchInput := tview.NewInputField().
 		SetLabel("Search: ").
-		SetFieldBackgroundColor(tcell.NewRGBColor(40, 50, 70)).
+		SetFieldBackgroundColor(tcell.ColorDefault).
 		SetLabelColor(tcell.ColorYellow)
 	searchInput.SetBackgroundColor(bgColor)
 
