@@ -50,8 +50,8 @@ func logSessions(sessions Sessions, debug bool) {
 	}
 }
 
-func runProgram(dir string, dirOverridden bool, sessions Sessions, lastCursor int) model {
-	m := newModel(dir, dirOverridden, sessions, lastCursor)
+func runProgram(dir string, dirOverridden bool, sessions Sessions, lastCursor int, lastSearch string) model {
+	m := newModel(dir, dirOverridden, sessions, lastCursor, lastSearch)
 
 	// Set up search input change handler
 	m.searchInput.SetChangedFunc(func(text string) {
@@ -239,19 +239,23 @@ func main() {
 	logSessions(sessions, debug)
 
 	lastCursor := -1
+	lastSearch := ""
 	for {
 		if debug {
 			log.Printf("Setting cursor to %d", lastCursor)
 		}
-		finalModel := runProgram(dir, dirOverridden, sessions, lastCursor)
+		finalModel := runProgram(dir, dirOverridden, sessions, lastCursor, lastSearch)
 		if finalModel.shouldRefresh {
 			sessions, err = loadSessions(dir)
 			if err != nil {
 				log.Fatalf("Error reloading sessions: %v", err)
 			}
 			lastCursor = -1
+			// Preserve search query when refreshing
+			lastSearch = finalModel.searchQuery
 		} else if finalModel.selectedCommand != "" {
 			lastCursor = handleCommand(finalModel.selectedCommand, finalModel.selectedIndex)
+			lastSearch = ""
 		} else {
 			break
 		}
